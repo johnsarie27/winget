@@ -1,0 +1,38 @@
+name: Update WinGet Packages
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 0 * * sun' # Scheduled to run at 00:00 every sunday
+
+jobs:
+  update:
+    name: Update package ${{ matrix.id }}
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        include:
+          - id: "Amazon.SessionManagerPlugin"
+            repo: "aws/session-manager-plugin"
+            url: "https://s3.amazonaws.com/session-manager-downloads/plugin/{VERSION}/windows/SessionManagerPluginSetup.exe"
+
+    steps:
+    - name: Update Packages
+      uses: michidk/winget-updater@latest
+      with:
+        komac-token: ${{ secrets.KOMAC_TOKEN }}
+        identifier: ${{ matrix.id }}
+        repo: ${{ matrix.repo }}
+        url: ${{ matrix.url }}
+
+  cleanup:
+    name: Cleanup branches
+    needs: update # Not necessarily needed as PRs don't get closed that quick but still nice to have it in order
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Run Komac
+      uses: michidk/run-komac@latest
+      with:
+        args: 'cleanup --only-merged --token=${{ secrets.KOMAC_TOKEN }}'
